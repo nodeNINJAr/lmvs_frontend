@@ -24,7 +24,7 @@ const baseQuery: typeof rawBaseQuery = async (args, api, extra) => {
 export const api = createApi({
   reducerPath: 'api',
   baseQuery,
-  tagTypes: ['Me', 'Documents', 'Workers', 'Stats'],
+  tagTypes: ['Me', 'Documents', 'Workers', 'Stats', 'Verification'],
   endpoints: (b) => ({
     // ── Auth ──
     register: b.mutation<any, FormData>({
@@ -47,11 +47,19 @@ export const api = createApi({
       query: () => '/documents/me',
       providesTags: ['Documents'],
     }),
+    deleteDocument: b.mutation<any, string>({
+      query: (id) => ({ url: `/documents/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Documents'],
+    }),
 
     // ── Verification ──
     runVerification: b.mutation<any, string | void>({
       query: (workerId) => ({ url: '/verification/run', method: 'POST', body: workerId ? { workerId } : undefined }),
-      invalidatesTags: ['Me', 'Documents', 'Workers', 'Stats'],
+      invalidatesTags: ['Me', 'Documents', 'Workers', 'Stats', 'Verification'],
+    }),
+    myVerification: b.query<any, void>({
+      query: () => '/verification/me',
+      providesTags: ['Verification'],
     }),
 
     // ── Admin ──
@@ -80,6 +88,10 @@ export const api = createApi({
     verifyByToken: b.query<any, string>({
       query: (token) => `/verify/${token}`,
     }),
+    publicStats: b.query<any, void>({
+      query: () => '/public/stats',
+      providesTags: ['Stats'],
+    }),
   }),
 });
 
@@ -89,11 +101,14 @@ export const {
   useMeQuery,
   useUploadDocumentsMutation,
   useMyDocumentsQuery,
+  useDeleteDocumentMutation,
   useRunVerificationMutation,
+  useMyVerificationQuery,
   useListWorkersQuery,
   useGetWorkerQuery,
   useDecideWorkerMutation,
   useStatsQuery,
   useGetDocumentQuery,
   useVerifyByTokenQuery,
+  usePublicStatsQuery,
 } = api;

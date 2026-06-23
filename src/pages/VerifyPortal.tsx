@@ -56,10 +56,15 @@ function Profile({ data }: { data: any }) {
         </section>
 
         <section>
-          <h3 className="font-semibold mb-2">AI trust assessment</h3>
+          <h3 className="font-semibold mb-2">Trust assessment</h3>
           <div className="space-y-2 text-sm">
             <TrustMeter score={v.trustScore} />
-            <div>Status: <StatusBadge status={v.status} /></div>
+            <div className="flex items-center gap-2">
+              <span>Status:</span> <StatusBadge status={v.status} />
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${v.analyzer === 'admin' ? 'bg-brand/10 text-brand' : 'bg-slate-100 text-slate-500'}`}>
+                {v.analyzer === 'admin' ? '👤 verified by admin' : `🤖 ${v.analyzer || 'openai'}`}
+              </span>
+            </div>
             <div>Verified at: {v.verifiedAt ? new Date(v.verifiedAt).toLocaleString() : '—'}</div>
             {v.notes && <p className="text-slate-600">{v.notes}</p>}
           </div>

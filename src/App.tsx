@@ -4,6 +4,7 @@ import { useAppDispatch, useAppSelector } from './store';
 import { useMeQuery } from './store/api';
 import { setUser } from './store/authSlice';
 import { ProtectedRoute } from './components/Layout';
+import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import WorkerDashboard from './pages/WorkerDashboard';
@@ -12,7 +13,7 @@ import VerifyPortal from './pages/VerifyPortal';
 
 function Home() {
   const { user } = useAppSelector((s) => s.auth);
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Landing />;
   return <Navigate to={user.role === 'ADMIN' ? '/admin' : '/worker'} replace />;
 }
 

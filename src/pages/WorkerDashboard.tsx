@@ -1,23 +1,29 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import {
-  useMeQuery, useMyDocumentsQuery, useUploadDocumentsMutation, useRunVerificationMutation,
+  useMeQuery, useMyDocumentsQuery, useUploadDocumentsMutation, useDeleteDocumentMutation,
+  useRunVerificationMutation, useMyVerificationQuery,
 } from '../store/api';
 import { Layout } from '../components/Layout';
-import { Card, Button, StatusBadge, TrustMeter, Skeleton, Alert, FilePicker } from '../components/ui';
+import { Card, Button, StatusBadge, TrustMeter, Skeleton, Alert, FilePicker, Spinner } from '../components/ui';
+import { DocumentViewer } from '../components/DocumentViewer';
 
 const DOC_TYPES = ['NID', 'PASSPORT', 'SKILL_CERTIFICATE', 'TRAINING_CERTIFICATE', 'EXPERIENCE_CERTIFICATE', 'PHOTO'];
 
 export default function WorkerDashboard() {
   const { data: meData, isLoading: meLoading } = useMeQuery();
   const { data: docData, isLoading: docsLoading } = useMyDocumentsQuery();
+  const { data: verifData, isLoading: verifLoading } = useMyVerificationQuery();
   const [uploadDocuments, upload] = useUploadDocumentsMutation();
+  const [deleteDocument] = useDeleteDocumentMutation();
   const [runVerification, verify] = useRunVerificationMutation();
 
   const [file, setFile] = useState<File | null>(null);
   const [docType, setDocType] = useState('NID');
   const [result, setResult] = useState<any>(null);
   const [msg, setMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   const me = meData?.user;
   const documents = docData?.documents || [];
@@ -38,7 +44,18 @@ export default function WorkerDashboard() {
     catch (e: any) { setMsg({ type: 'error', text: e?.data?.error || 'Verification failed' }); }
   };
 
-  const qr = result?.qr;
+  const doDelete = async (id: string) => {
+    if (!window.confirm('Delete this document?')) return;
+    setMsg(null);
+    setDeletingId(id);
+    try { await deleteDocument(id).unwrap(); setMsg({ type: 'success', text: 'Document deleted.' }); }
+    catch (e: any) { setMsg({ type: 'error', text: e?.data?.error || 'Delete failed' }); }
+    finally { setDeletingId(null); }
+  };
+
+  // Prefer the just-ran result (has live AI output); fall back to the persisted record on load/reload.
+  const verification = result || verifData?.verification;
+  const qr = result?.qr || verifData?.qr;
 
   return (
     <Layout>
@@ -77,13 +94,26 @@ export default function WorkerDashboard() {
             </div>
           ) : (
             <div className="rounded-lg border divide-y">
-              {documents.map((d: any) => (
-                <div key={d._id} className="flex items-center gap-3 px-3 py-2">
+              {documents.map((d: any, idx: number) => (
+                <div
+                  key={d._id}
+                  className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-slate-50 transition-colors"
+                  onClick={() => setViewerIndex(idx)}
+                >
                   <span className="text-lg">📄</span>
                   <span className="flex-1 text-sm font-medium text-slate-700">{d.docType?.replace(/_/g, ' ')}</span>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${d.sourceVerified ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
                     {d.sourceVerified ? '✓ verified' : 'pending'}
                   </span>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); doDelete(d._id); }}
+                    disabled={deletingId === d._id}
+                    aria-label="Delete document"
+                    className="text-slate-400 hover:text-red-600 disabled:opacity-50 leading-none px-1"
+                  >
+                    {deletingId === d._id ? <Spinner className="h-4 w-4" /> : '🗑'}
+                  </button>
                 </div>
               ))}
               {documents.length === 0 && <div className="px-3 py-6 text-center text-sm text-slate-400">No documents yet.</div>}
@@ -93,16 +123,23 @@ export default function WorkerDashboard() {
 
         <Card title="2 · AI verification">
           <Button onClick={doVerify} loading={verify.isLoading} className="w-full mb-3">
-            {verify.isLoading ? 'Running AI checks…' : 'Run AI verification'}
+            {verify.isLoading ? 'Running AI checks…' : verification ? 'Re-run AI verification' : 'Run AI verification'}
           </Button>
-          {result && (
+          {verifLoading && !verification ? (
+            <Skeleton className="h-10 w-full" />
+          ) : verification ? (
             <div className="text-sm space-y-2">
               <div className="flex items-center justify-between">
-                <StatusBadge status={result.status} />
-                <span className="text-slate-500">{result.analyzer || 'openai'}</span>
+                <StatusBadge status={verification.status} />
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${verification.analyzer === 'admin' ? 'bg-brand/10 text-brand' : 'bg-slate-100 text-slate-500'}`}>
+                  {verification.analyzer === 'admin' ? '👤 verified by admin' : `🤖 ${verification.analyzer || 'openai'}`}
+                </span>
               </div>
-              <TrustMeter score={result.trustScore} />
+              <TrustMeter score={verification.trustScore} />
+              {verification.notes && <p className="text-slate-500 text-xs">{verification.notes}</p>}
             </div>
+          ) : (
+            <p className="text-sm text-slate-400">No verification run yet.</p>
           )}
         </Card>
 
@@ -132,6 +169,14 @@ export default function WorkerDashboard() {
           )}
         </Card>
       </div>
+
+      {viewerIndex !== null && (
+        <DocumentViewer
+          documents={documents}
+          startIndex={viewerIndex}
+          onClose={() => setViewerIndex(null)}
+        />
+      )}
     </Layout>
   );
 }
