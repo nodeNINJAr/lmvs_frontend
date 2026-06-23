@@ -35,9 +35,14 @@ function Profile({ data }: { data: any }) {
   return (
     <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
       <div className="bg-brand text-white px-5 py-4 flex items-center justify-between">
-        <div>
-          <div className="text-xs uppercase opacity-80">Verified Migrant Worker</div>
-          <div className="font-mono">{credential.serial}</div>
+        <div className="flex items-center gap-3">
+          <div className="h-11 w-11 rounded-full bg-white/15 border border-white/30 flex items-center justify-center text-xl shrink-0" aria-hidden="true">
+            🇧🇩
+          </div>
+          <div>
+            <div className="text-xs uppercase opacity-80 font-semibold tracking-wide">LMVS · Verified Migrant Worker</div>
+            <div className="font-mono">{credential.serial}</div>
+          </div>
         </div>
         <StatusBadge status={v.status} />
       </div>
