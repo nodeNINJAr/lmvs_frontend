@@ -7,6 +7,7 @@ import {
 import { Layout } from '../components/Layout';
 import { Card, Button, StatusBadge, TrustMeter, Skeleton, Alert, FilePicker, Spinner, VerificationNotes, VerificationProgress } from '../components/ui';
 import { DocumentViewer } from '../components/DocumentViewer';
+import { WorkerChat } from '../components/WorkerChat';
 
 const DOC_TYPES = ['NID', 'PASSPORT', 'SKILL_CERTIFICATE', 'TRAINING_CERTIFICATE', 'EXPERIENCE_CERTIFICATE', 'PHOTO'];
 
@@ -178,6 +179,8 @@ export default function WorkerDashboard() {
           onClose={() => setViewerIndex(null)}
         />
       )}
+
+      <WorkerChat />
     </Layout>
   );
 }

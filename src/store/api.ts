@@ -61,6 +61,9 @@ export const api = createApi({
       query: () => '/verification/me',
       providesTags: ['Verification'],
     }),
+    workerChat: b.mutation<{ reply: string }, { message: string; history?: { role: 'user' | 'assistant'; content: string }[] }>({
+      query: (body) => ({ url: '/chat/me', method: 'POST', body }),
+    }),
 
     // ── Admin ──
     listWorkers: b.query<any, void>({
@@ -107,6 +110,7 @@ export const {
   useDeleteDocumentMutation,
   useRunVerificationMutation,
   useMyVerificationQuery,
+  useWorkerChatMutation,
   useListWorkersQuery,
   useGetWorkerQuery,
   useDecideWorkerMutation,
