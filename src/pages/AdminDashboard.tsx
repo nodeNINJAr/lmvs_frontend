@@ -10,9 +10,9 @@ import { AdminChat } from '../components/AdminChat';
 
 export default function AdminDashboard() {
   const { data: stats, isLoading: statsLoading } = useStatsQuery();
-  const { data: workersData, isLoading: workersLoading } = useListWorkersQuery();
+  const { data: workersData, isLoading: workersLoading, isError: workersError } = useListWorkersQuery();
   const [selId, setSelId] = useState<string | null>(null);
-  const { data: detail, isFetching: detailLoading } = useGetWorkerQuery(selId as string, { skip: !selId });
+  const { data: detail, isFetching: detailLoading, isError: detailError } = useGetWorkerQuery(selId as string, { skip: !selId });
   const [decide, decideState] = useDecideWorkerMutation();
   const [runVerification, verify] = useRunVerificationMutation();
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
@@ -60,6 +60,7 @@ export default function AdminDashboard() {
 
       <div className="grid md:grid-cols-2 gap-4">
         <Card title="All workers">
+          {workersError && <Alert type="error">Failed to load workers. Try refreshing the page.</Alert>}
           {workersLoading ? (
             <div className="space-y-2">
               {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-9 w-full" />)}
@@ -90,6 +91,7 @@ export default function AdminDashboard() {
 
         <Card title="Review">
           {!selId && <p className="text-slate-400 text-sm">Select a worker.</p>}
+          {selId && detailError && <Alert type="error">Failed to load worker details. Try again.</Alert>}
           {selId && detailLoading && !detail && (
             <div className="space-y-3">
               <Skeleton className="h-5 w-40" />
