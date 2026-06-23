@@ -4,9 +4,13 @@ import {
   useStatsQuery, useListWorkersQuery, useGetWorkerQuery, useDecideWorkerMutation, useRunVerificationMutation,
 } from '../store/api';
 import { Layout } from '../components/Layout';
-import { Card, Button, StatusBadge, TrustMeter, Skeleton, Alert, VerificationNotes, VerificationProgress } from '../components/ui';
+import { Card, Button, StatusBadge, TrustMeter, Skeleton, Alert, VerificationNotes, VerificationProgress, EmptyState } from '../components/ui';
+import { toast } from '../lib/toast';
 import { DocumentViewer } from '../components/DocumentViewer';
 import { AdminChat } from '../components/AdminChat';
+
+const STATUS_FILTERS = ['ALL', 'SUBMITTED', 'UNDER_REVIEW', 'VERIFIED', 'REJECTED'];
+const STAT_ICONS: Record<string, string> = { Workers: '👥', Verified: '✅', Review: '🔍', Rejected: '⛔', 'QR issued': '🔗' };
 
 export default function AdminDashboard() {
   const { data: stats, isLoading: statsLoading } = useStatsQuery();
@@ -18,15 +22,23 @@ export default function AdminDashboard() {
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [msg, setMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
   const [reason, setReason] = useState('');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
 
   const workers = workersData?.workers || [];
+  const filteredWorkers = workers.filter((w: any) => {
+    if (statusFilter !== 'ALL' && w.profileStatus !== statusFilter) return false;
+    if (!search.trim()) return true;
+    const q = search.trim().toLowerCase();
+    return (w.fullName || '').toLowerCase().includes(q) || (w.phone || '').toLowerCase().includes(q);
+  });
 
   const act = async (decision: 'APPROVED' | 'REJECTED') => {
     if (!selId) return;
     setMsg(null);
     try {
       await decide({ id: selId, decision, reason: reason.trim() || undefined }).unwrap();
-      setMsg({ type: 'success', text: `Worker ${decision.toLowerCase()}.` });
+      toast(`Worker ${decision.toLowerCase()}.`, decision === 'APPROVED' ? 'success' : 'info');
       setReason('');
     } catch (e: any) {
       setMsg({ type: 'error', text: e?.data?.error || 'Decision failed' });
@@ -38,7 +50,7 @@ export default function AdminDashboard() {
     setMsg(null);
     try {
       await runVerification(selId).unwrap();
-      setMsg({ type: 'success', text: 'Verification re-run complete.' });
+      toast('Verification re-run complete.');
     } catch (e: any) {
       setMsg({ type: 'error', text: e?.data?.error || 'Verification failed' });
     }
@@ -54,22 +66,43 @@ export default function AdminDashboard() {
               <Card key={i}><Skeleton className="h-7 w-12 mb-2" /><Skeleton className="h-3 w-16" /></Card>
             ))
           : stats && [['Workers', stats.totalWorkers], ['Verified', stats.verified], ['Review', stats.underReview], ['Rejected', stats.rejected], ['QR issued', stats.qrIssued]].map(([k, v]) => (
-              <Card key={k as string}><div className="text-2xl font-bold text-slate-800">{v as number}</div><div className="text-xs text-slate-500">{k as string}</div></Card>
+              <Card key={k as string}>
+                <div className="text-xl mb-1">{STAT_ICONS[k as string]}</div>
+                <div className="text-2xl font-bold text-slate-800">{v as number}</div>
+                <div className="text-xs text-slate-500">{k as string}</div>
+              </Card>
             ))}
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
         <Card title="All workers">
           {workersError && <Alert type="error">Failed to load workers. Try refreshing the page.</Alert>}
+          <div className="flex flex-col sm:flex-row gap-2 mb-3">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by name or phone…"
+              className="flex-1 border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+            />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="border border-slate-300 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+            >
+              {STATUS_FILTERS.map((s) => <option key={s} value={s}>{s === 'ALL' ? 'All statuses' : s.replace(/_/g, ' ')}</option>)}
+            </select>
+          </div>
           {workersLoading ? (
             <div className="space-y-2">
               {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-9 w-full" />)}
             </div>
+          ) : filteredWorkers.length === 0 ? (
+            <EmptyState icon="🔍" title="No workers match" hint="Try a different search or status filter." />
           ) : (
             <table className="w-full text-sm">
               <thead className="text-left text-slate-500 border-b"><tr><th className="py-1">Name</th><th>Status</th><th>Trust</th><th>QR</th></tr></thead>
               <tbody>
-                {workers.map((w: any) => (
+                {filteredWorkers.map((w: any) => (
                   <tr
                     key={w._id}
                     className={`border-b hover:bg-slate-50 cursor-pointer transition-colors ${selId === w._id ? 'bg-brand/5' : ''}`}
@@ -81,9 +114,6 @@ export default function AdminDashboard() {
                     <td>{w.qrSerial ? '🔗' : '—'}</td>
                   </tr>
                 ))}
-                {workers.length === 0 && (
-                  <tr><td colSpan={4} className="py-6 text-center text-slate-400">No workers yet.</td></tr>
-                )}
               </tbody>
             </table>
           )}

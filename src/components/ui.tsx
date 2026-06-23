@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { getToastItems, subscribeToast, type ToastItem } from '../lib/toast';
 
-export function Card({ title, children, right }: { title?: string; children: ReactNode; right?: ReactNode }) {
+export function Card({ title, children, right, className = '' }: { title?: string; children: ReactNode; right?: ReactNode; className?: string }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5">
+    <div className={`bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5 ${className}`}>
       {(title || right) && (
         <div className="flex items-center justify-between mb-3">
           {title && <h2 className="font-semibold text-slate-700">{title}</h2>}
@@ -230,6 +231,73 @@ export function VerificationNotes({ notes, analyzer }: { notes?: string | null; 
           </ul>
         </div>
       )}
+    </div>
+  );
+}
+
+const TOAST_STYLES: Record<ToastItem['type'], string> = {
+  error: 'bg-red-600 text-white',
+  success: 'bg-brand text-white',
+  info: 'bg-slate-700 text-white',
+};
+
+/** Mount once near the app root; renders whatever toast() has queued. */
+export function ToastHost() {
+  const [items, setItems] = useState<ToastItem[]>(getToastItems());
+  useEffect(() => subscribeToast(setItems), []);
+
+  return (
+    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 w-[calc(100%-2rem)] max-w-sm">
+      {items.map((t) => (
+        <div
+          key={t.id}
+          className={`shadow-lg rounded-lg px-4 py-3 text-sm font-medium flex items-start gap-2 animate-in ${TOAST_STYLES[t.type]}`}
+        >
+          <span>{ALERT_ICONS[t.type]}</span>
+          <span className="flex-1">{t.text}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const JOURNEY_STEPS = ['SUBMITTED', 'UNDER_REVIEW', 'VERIFIED'];
+
+/** Horizontal progress stepper showing where a worker's profile sits in the verification journey. */
+export function ProgressSteps({ status }: { status?: string | null }) {
+  const rejected = status === 'REJECTED';
+  const idx = rejected ? JOURNEY_STEPS.length - 1 : Math.max(0, JOURNEY_STEPS.indexOf(status || 'SUBMITTED'));
+  const labels = ['Submitted', 'Under review', rejected ? 'Rejected' : 'Verified'];
+
+  return (
+    <div className="flex items-center">
+      {labels.map((label, i) => (
+        <div key={label} className="flex items-center flex-1 last:flex-none">
+          <div className="flex flex-col items-center gap-1">
+            <div
+              className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                i < idx ? 'bg-brand text-white' : i === idx ? (rejected ? 'bg-red-600 text-white' : 'bg-brand text-white') : 'bg-slate-200 text-slate-400'
+              }`}
+            >
+              {i < idx ? '✓' : i + 1}
+            </div>
+            <span className={`text-[11px] whitespace-nowrap ${i <= idx ? 'text-slate-700 font-medium' : 'text-slate-400'}`}>{label}</span>
+          </div>
+          {i < labels.length - 1 && (
+            <div className={`h-0.5 flex-1 mx-1 mb-4 ${i < idx ? 'bg-brand' : 'bg-slate-200'}`} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function EmptyState({ icon = '🗂️', title, hint }: { icon?: string; title: string; hint?: string }) {
+  return (
+    <div className="text-center py-8 px-4">
+      <div className="text-3xl mb-2">{icon}</div>
+      <div className="text-sm font-medium text-slate-600">{title}</div>
+      {hint && <div className="text-xs text-slate-400 mt-1">{hint}</div>}
     </div>
   );
 }

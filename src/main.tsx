@@ -4,6 +4,7 @@ import { Provider } from 'react-redux'
 import { BrowserRouter } from 'react-router-dom'
 import { store } from './store'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { ToastHost } from './components/ui'
 import './index.css'
 import App from './App.tsx'
 
@@ -12,6 +13,7 @@ createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <Provider store={store}>
         <BrowserRouter>
+          <ToastHost />
           <App />
         </BrowserRouter>
       </Provider>

@@ -5,7 +5,8 @@ import {
   useRunVerificationMutation, useMyVerificationQuery,
 } from '../store/api';
 import { Layout } from '../components/Layout';
-import { Card, Button, StatusBadge, TrustMeter, Skeleton, Alert, FilePicker, Spinner, VerificationNotes, VerificationProgress } from '../components/ui';
+import { Card, Button, StatusBadge, TrustMeter, Skeleton, Alert, FilePicker, Spinner, VerificationNotes, VerificationProgress, ProgressSteps } from '../components/ui';
+import { toast } from '../lib/toast';
 import { DocumentViewer } from '../components/DocumentViewer';
 import { WorkerChat } from '../components/WorkerChat';
 
@@ -35,13 +36,13 @@ export default function WorkerDashboard() {
     const fd = new FormData();
     fd.append('files', file);
     fd.append('docTypes', docType);
-    try { await uploadDocuments(fd).unwrap(); setFile(null); setMsg({ type: 'success', text: 'Document uploaded.' }); }
+    try { await uploadDocuments(fd).unwrap(); setFile(null); toast('Document uploaded.'); }
     catch (e: any) { setMsg({ type: 'error', text: e?.data?.error || 'Upload failed' }); }
   };
 
   const doVerify = async () => {
     setMsg(null);
-    try { const r = await runVerification().unwrap(); setResult(r); }
+    try { const r = await runVerification().unwrap(); setResult(r); toast('Verification complete.'); }
     catch (e: any) { setMsg({ type: 'error', text: e?.data?.error || 'Verification failed' }); }
   };
 
@@ -49,7 +50,7 @@ export default function WorkerDashboard() {
     if (!window.confirm('Delete this document?')) return;
     setMsg(null);
     setDeletingId(id);
-    try { await deleteDocument(id).unwrap(); setMsg({ type: 'success', text: 'Document deleted.' }); }
+    try { await deleteDocument(id).unwrap(); toast('Document deleted.', 'info'); }
     catch (e: any) { setMsg({ type: 'error', text: e?.data?.error || 'Delete failed' }); }
     finally { setDeletingId(null); }
   };
@@ -57,6 +58,8 @@ export default function WorkerDashboard() {
   // Prefer the just-ran result (has live AI output); fall back to the persisted record on load/reload.
   const verification = result || verifData?.verification;
   const qr = result?.qr || verifData?.qr;
+  const uploadedTypes = new Set(documents.map((d: any) => d.docType));
+  const missingTypes = DOC_TYPES.filter((t) => !uploadedTypes.has(t));
 
   return (
     <Layout>
@@ -74,6 +77,12 @@ export default function WorkerDashboard() {
 
       {msg && <div className="mb-4"><Alert type={msg.type} onDismiss={() => setMsg(null)}>{msg.text}</Alert></div>}
 
+      {!meLoading && (
+        <Card className="mb-4">
+          <ProgressSteps status={me?.profileStatus} />
+        </Card>
+      )}
+
       <div className="grid md:grid-cols-2 gap-4">
         <Card title="1 · Upload document">
           <div className="space-y-3 mb-4">
@@ -88,6 +97,15 @@ export default function WorkerDashboard() {
               {upload.isLoading ? 'Uploading…' : 'Upload document'}
             </Button>
           </div>
+
+          {!docsLoading && (
+            <div className="flex items-center justify-between mb-2 text-xs">
+              <span className="text-slate-500">{uploadedTypes.size} of {DOC_TYPES.length} document types uploaded</span>
+              {missingTypes.length > 0 && (
+                <span className="text-amber-600 font-medium">Missing: {missingTypes.map((t) => t.replace(/_/g, ' ')).join(', ')}</span>
+              )}
+            </div>
+          )}
 
           {docsLoading ? (
             <div className="space-y-2">

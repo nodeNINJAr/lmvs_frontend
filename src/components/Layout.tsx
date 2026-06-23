@@ -9,14 +9,21 @@ export function Layout({ children }: { children: ReactNode }) {
   const nav = useNavigate();
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-40 bg-brand text-white shadow-md">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      <header className="sticky top-0 z-40 bg-gradient-to-r from-brand to-brand-dark text-white shadow-md">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link to="/" className="font-bold tracking-tight">🇧🇩 LMVS</Link>
-          <nav className="flex items-center gap-4 text-sm">
+          <Link to="/" className="font-bold tracking-tight flex items-center gap-1.5">
+            <span>🇧🇩</span><span>LMVS</span>
+          </Link>
+          <nav className="flex items-center gap-3 text-sm">
             {user ? (
               <>
-                <span className="opacity-90 hidden sm:inline">{user.fullName || user.phone} · {user.role}</span>
+                <span className="hidden sm:flex items-center gap-2 opacity-95">
+                  <span>{user.fullName || user.phone}</span>
+                  <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${user.role === 'ADMIN' ? 'bg-accent/90' : 'bg-white/20'}`}>
+                    {user.role}
+                  </span>
+                </span>
                 <button
                   onClick={() => { dispatch(logout()); nav('/login'); }}
                   className="bg-white/15 hover:bg-white/25 transition-colors px-3 py-1.5 rounded-lg font-medium"
@@ -33,7 +40,10 @@ export function Layout({ children }: { children: ReactNode }) {
           </nav>
         </div>
       </header>
-      <main className="max-w-6xl mx-auto px-4 py-6">{children}</main>
+      <main className="max-w-6xl mx-auto px-4 py-6 flex-1 w-full">{children}</main>
+      <footer className="text-center text-xs text-slate-400 py-4">
+        Labor Migration Verification System · Demo
+      </footer>
     </div>
   );
 }
