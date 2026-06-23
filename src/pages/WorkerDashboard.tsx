@@ -5,7 +5,7 @@ import {
   useRunVerificationMutation, useMyVerificationQuery,
 } from '../store/api';
 import { Layout } from '../components/Layout';
-import { Card, Button, StatusBadge, TrustMeter, Skeleton, Alert, FilePicker, Spinner } from '../components/ui';
+import { Card, Button, StatusBadge, TrustMeter, Skeleton, Alert, FilePicker, Spinner, VerificationNotes, VerificationProgress } from '../components/ui';
 import { DocumentViewer } from '../components/DocumentViewer';
 
 const DOC_TYPES = ['NID', 'PASSPORT', 'SKILL_CERTIFICATE', 'TRAINING_CERTIFICATE', 'EXPERIENCE_CERTIFICATE', 'PHOTO'];
@@ -125,7 +125,8 @@ export default function WorkerDashboard() {
           <Button onClick={doVerify} loading={verify.isLoading} className="w-full mb-3">
             {verify.isLoading ? 'Running AI checks…' : verification ? 'Re-run AI verification' : 'Run AI verification'}
           </Button>
-          {verifLoading && !verification ? (
+          {verify.isLoading && <VerificationProgress />}
+          {verify.isLoading ? null : verifLoading && !verification ? (
             <Skeleton className="h-10 w-full" />
           ) : verification ? (
             <div className="text-sm space-y-2">
@@ -136,7 +137,7 @@ export default function WorkerDashboard() {
                 </span>
               </div>
               <TrustMeter score={verification.trustScore} />
-              {verification.notes && <p className="text-slate-500 text-xs">{verification.notes}</p>}
+              <VerificationNotes notes={verification.notes} analyzer={verification.analyzer} />
             </div>
           ) : (
             <p className="text-sm text-slate-400">No verification run yet.</p>

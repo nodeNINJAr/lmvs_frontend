@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useParams } from 'react-router-dom';
 import { useVerifyByTokenQuery } from '../store/api';
-import { StatusBadge, TrustMeter, Spinner, Alert } from '../components/ui';
+import { StatusBadge, TrustMeter, Spinner, Alert, VerificationNotes } from '../components/ui';
 
 export default function VerifyPortal() {
   const { token } = useParams();
@@ -66,7 +66,7 @@ function Profile({ data }: { data: any }) {
               </span>
             </div>
             <div>Verified at: {v.verifiedAt ? new Date(v.verifiedAt).toLocaleString() : '—'}</div>
-            {v.notes && <p className="text-slate-600">{v.notes}</p>}
+            <VerificationNotes notes={v.notes} analyzer={v.analyzer} />
           </div>
         </section>
 

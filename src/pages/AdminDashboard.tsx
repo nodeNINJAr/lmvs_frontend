@@ -4,7 +4,7 @@ import {
   useStatsQuery, useListWorkersQuery, useGetWorkerQuery, useDecideWorkerMutation, useRunVerificationMutation,
 } from '../store/api';
 import { Layout } from '../components/Layout';
-import { Card, Button, StatusBadge, TrustMeter, Skeleton, Alert } from '../components/ui';
+import { Card, Button, StatusBadge, TrustMeter, Skeleton, Alert, VerificationNotes, VerificationProgress } from '../components/ui';
 import { DocumentViewer } from '../components/DocumentViewer';
 
 export default function AdminDashboard() {
@@ -138,7 +138,7 @@ export default function AdminDashboard() {
                       {detail.verifications[0].analyzer === 'admin' ? '👤 admin' : `🤖 ${detail.verifications[0].analyzer || 'openai'}`}
                     </span>
                   </div>
-                  {detail.verifications[0].notes && <p className="text-slate-500">{detail.verifications[0].notes}</p>}
+                  <VerificationNotes notes={detail.verifications[0].notes} analyzer={detail.verifications[0].analyzer} />
                 </div>
               )}
 
@@ -154,6 +154,7 @@ export default function AdminDashboard() {
               <Button onClick={reverify} loading={verify.isLoading} className="w-full bg-slate-600 hover:bg-slate-700">
                 {verify.isLoading ? 'Running verification…' : 'Run verification'}
               </Button>
+              {verify.isLoading && <VerificationProgress />}
 
               <div>
                 <label className="block text-xs text-slate-500 mb-1">Reason (optional — overrides AI, shown to the worker)</label>

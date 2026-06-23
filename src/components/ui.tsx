@@ -185,3 +185,91 @@ export function TrustMeter({ score }: { score?: number | null }) {
     </div>
   );
 }
+
+/** Splits a "|"-joined notes string into trimmed, deduplicated phrases (defends against
+ * already-corrupted/repeated data even if the backend hasn't been redeployed yet). */
+function splitPhrases(text: string): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of text.split('|')) {
+    const phrase = raw.trim();
+    if (!phrase || seen.has(phrase)) continue;
+    seen.add(phrase);
+    out.push(phrase);
+  }
+  return out;
+}
+
+/** Renders verification notes point-by-point, highlighting the AI-authored portion in light yellow. */
+export function VerificationNotes({ notes, analyzer }: { notes?: string | null; analyzer?: string | null }) {
+  if (!notes) return null;
+
+  if (analyzer !== 'admin') {
+    const points = splitPhrases(notes);
+    return (
+      <ul className="text-xs bg-yellow-50 border border-yellow-200 text-yellow-800 rounded px-3 py-2 space-y-0.5 list-disc list-inside">
+        {points.map((p) => <li key={p}>{p}</li>)}
+      </ul>
+    );
+  }
+
+  const idx = notes.indexOf('AI findings:');
+  if (idx === -1) return <p className="text-xs text-slate-500">{notes}</p>;
+
+  const before = notes.slice(0, idx).replace(/\|\s*$/, '').trim();
+  const points = splitPhrases(notes.slice(idx).replace(/^AI findings:\s*/, ''));
+
+  return (
+    <div className="text-xs space-y-1">
+      {before && <p className="text-slate-500">{before}</p>}
+      {points.length > 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded px-3 py-2">
+          <p className="font-medium mb-1">AI findings</p>
+          <ul className="space-y-0.5 list-disc list-inside">
+            {points.map((p) => <li key={p}>{p}</li>)}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const AI_STEPS = [
+  '📄 Reading uploaded documents…',
+  '🔎 Extracting fields with AI vision…',
+  '🌐 Cross-checking official sources…',
+  '🧮 Scoring confidence & trust…',
+  '📡 Finalizing decision…',
+];
+
+/** Simulated step-by-step progress while a verification request is in flight (the backend
+ * returns one final result, not a stream, so this approximates pacing rather than reporting
+ * real server-side progress). Mount this conditionally from the caller (e.g. `{loading && <VerificationProgress />}`)
+ * so it starts fresh at step 0 each run. */
+export function VerificationProgress() {
+  const [step, setStep] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setStep((s) => Math.min(s + 1, AI_STEPS.length - 1));
+    }, 1400);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <div className="space-y-1.5 text-xs text-slate-600 mt-3">
+      {AI_STEPS.map((label, i) => (
+        <div key={label} className={`flex items-center gap-2 transition-opacity ${i > step ? 'opacity-40' : ''}`}>
+          {i < step ? (
+            <span className="text-green-600">✓</span>
+          ) : i === step ? (
+            <Spinner className="h-3 w-3 text-brand" />
+          ) : (
+            <span className="w-3 inline-block" />
+          )}
+          <span>{label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
