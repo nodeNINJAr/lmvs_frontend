@@ -48,7 +48,7 @@ export function ChatWidget({
         className="fixed bottom-5 right-5 z-50 bg-brand text-white rounded-full h-14 w-14 shadow-lg flex items-center justify-center text-2xl hover:bg-brand-dark transition-colors"
         aria-label="Ask AI assistant"
       >
-        {open ? '×' : '💬'}
+        {open ? '×' : '🤖'}
       </button>
 
       {open && (
