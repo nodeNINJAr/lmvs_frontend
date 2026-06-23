@@ -6,6 +6,7 @@ import {
 import { Layout } from '../components/Layout';
 import { Card, Button, StatusBadge, TrustMeter, Skeleton, Alert, VerificationNotes, VerificationProgress } from '../components/ui';
 import { DocumentViewer } from '../components/DocumentViewer';
+import { AdminChat } from '../components/AdminChat';
 
 export default function AdminDashboard() {
   const { data: stats, isLoading: statsLoading } = useStatsQuery();
@@ -196,6 +197,8 @@ export default function AdminDashboard() {
           onClose={() => setViewerIndex(null)}
         />
       )}
+
+      <AdminChat />
     </Layout>
   );
 }

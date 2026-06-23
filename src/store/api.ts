@@ -83,6 +83,9 @@ export const api = createApi({
       query: (id) => `/admin/documents/${id}`,
       providesTags: ['Documents'],
     }),
+    adminChat: b.mutation<{ reply: string }, { message: string; history?: { role: 'user' | 'assistant'; content: string }[] }>({
+      query: (body) => ({ url: '/admin/chat', method: 'POST', body }),
+    }),
 
     // ── Public verify ──
     verifyByToken: b.query<any, string>({
@@ -109,6 +112,7 @@ export const {
   useDecideWorkerMutation,
   useStatsQuery,
   useGetDocumentQuery,
+  useAdminChatMutation,
   useVerifyByTokenQuery,
   usePublicStatsQuery,
 } = api;
